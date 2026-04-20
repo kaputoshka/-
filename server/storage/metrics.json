@@ -1,0 +1,10 @@
+{
+  "trained_at": "2026-03-01T14:42:21.701200",
+  "metrics": {
+    "accuracy": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0
+  },
+  "samples": 56,
+  "features": 49
+}

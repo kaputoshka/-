@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16
+    container_name: car_sales_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-car_sales}
+      POSTGRES_USER: ${POSTGRES_USER:-car_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-car_pass}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-car_user} -d ${POSTGRES_DB:-car_sales}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: car_sales_server
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-car_user}:${POSTGRES_PASSWORD:-car_pass}@db:5432/${POSTGRES_DB:-car_sales}
+      JWT_SECRET: ${JWT_SECRET:-change_me_super_secret_key}
+      JWT_ALG: ${JWT_ALG:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-120}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      MODEL_PATH: ${MODEL_PATH:-server/storage/model.joblib}
+      METRICS_PATH: ${METRICS_PATH:-server/storage/metrics.json}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - server_storage:/app/server/storage
+
+  ui:
+    build:
+      context: .
+      dockerfile: ui/Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: car_sales_ui
+    depends_on:
+      - server
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:
+  server_storage:
